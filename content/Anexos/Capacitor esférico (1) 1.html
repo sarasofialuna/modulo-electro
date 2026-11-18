@@ -1,0 +1,388 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Capacitor esférico</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,500;0,600;1,400&family=Source+Sans+3:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+
+<style>
+/* Panel de instrumento: corte transversal a la izquierda, lecturas y curva a la
+   derecha; una sola columna en pantalla angosta. Paleta del jardín OVA. */
+:root{
+  --bg:#FBF9F6; --surface:#FFFFFF; --fg:#2A2420; --muted:#6E635B; --line:#E2DAD1;
+  --cobre:#B2652E; --arco:#3A7F9C; --laton:#96762F; --morado:#6F529B;
+  --campo:rgba(150,118,47,.55); --velo:rgba(58,127,156,.07);
+  --display:"Spectral",Georgia,"Times New Roman",serif;
+  --cuerpo:"Source Sans 3",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --dato:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#15120F; --surface:#1E1A16; --fg:#EDE6DE; --muted:#9A8E83; --line:#332C25;
+  --cobre:#D98B4A; --arco:#6FBCDC; --laton:#C4A24E; --morado:#A98BD6;
+  --campo:rgba(196,162,78,.6); --velo:rgba(111,188,220,.08);
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#15120F; --surface:#1E1A16; --fg:#EDE6DE; --muted:#9A8E83; --line:#332C25;
+  --cobre:#D98B4A; --arco:#6FBCDC; --laton:#C4A24E; --morado:#A98BD6;
+  --campo:rgba(196,162,78,.6); --velo:rgba(111,188,220,.08);
+  color-scheme:dark;
+}
+
+*{box-sizing:border-box}
+body{
+  background:var(--bg); color:var(--fg);
+  font-family:var(--cuerpo); font-size:16px; line-height:1.6;
+  padding-block:28px 36px; padding-left:18px; padding-right:18px;
+}
+.hoja{max-width:1040px; margin:0 auto; display:flex; flex-direction:column; gap:22px}
+
+header{display:flex; flex-direction:column; gap:6px}
+.eyebrow{
+  font-family:var(--dato); font-size:11px; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--muted);
+}
+h1{
+  font-family:var(--display); font-weight:600; font-size:clamp(26px,4.4vw,36px);
+  line-height:1.15; margin:0; text-wrap:balance;
+}
+.bajada{margin:0; color:var(--muted); max-width:62ch}
+
+.panel{
+  display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+  gap:20px; align-items:start;
+}
+@media (max-width:760px){.panel{grid-template-columns:1fr}}
+
+.caja{
+  background:var(--surface); border:1px solid var(--line);
+  border-radius:4px; padding:18px; min-width:0;
+}
+.caja h2{
+  font-family:var(--dato); font-size:11px; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--muted); font-weight:500;
+  margin:0 0 14px;
+}
+
+svg{display:block; width:100%; height:auto; max-width:100%}
+#corte text,#curva text{font-family:var(--dato)}
+
+/* --- controles --- */
+.mandos{display:flex; flex-direction:column; gap:16px; margin-top:18px}
+.mando{display:flex; flex-direction:column; gap:5px}
+.mando .fila{display:flex; justify-content:space-between; align-items:baseline; gap:10px}
+.mando label{font-size:14px; color:var(--muted)}
+.mando .val{font-family:var(--dato); font-size:14px; font-variant-numeric:tabular-nums}
+input[type=range]{width:100%; accent-color:var(--cobre); margin:0}
+#r2{accent-color:var(--arco)}
+input[type=range]:focus-visible{outline:2px solid var(--morado); outline-offset:3px}
+
+.presets{display:flex; flex-wrap:wrap; gap:8px; margin-top:4px}
+.presets button{
+  font-family:var(--cuerpo); font-size:13px; color:var(--fg);
+  background:transparent; border:1px solid var(--line); border-radius:3px;
+  padding:6px 11px; cursor:pointer;
+}
+.presets button:hover{border-color:var(--cobre); color:var(--cobre)}
+.presets button:focus-visible{outline:2px solid var(--morado); outline-offset:2px}
+
+/* --- lecturas --- */
+.lecturas{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin-bottom:18px}
+.lectura{display:flex; flex-direction:column; gap:1px}
+.lectura .k{font-size:12px; color:var(--muted)}
+.lectura .v{font-family:var(--dato); font-size:16px; font-variant-numeric:tabular-nums}
+
+.capacitancia{
+  border-top:1px solid var(--line); padding-top:14px; margin-bottom:16px;
+  display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;
+}
+.capacitancia .k{font-size:13px; color:var(--muted)}
+.capacitancia .v{
+  font-family:var(--dato); font-weight:500; font-size:clamp(28px,5vw,38px);
+  font-variant-numeric:tabular-nums; color:var(--morado); line-height:1;
+}
+.capacitancia .u{font-family:var(--dato); font-size:16px; color:var(--muted)}
+
+.aviso{
+  font-size:14px; color:var(--muted); border-left:2px solid var(--cobre);
+  padding-left:12px; margin-top:14px; line-height:1.5;
+}
+
+/* --- pie --- */
+.formula{
+  background:var(--surface); border:1px solid var(--line); border-radius:4px;
+  padding:16px 18px; display:flex; flex-direction:column; gap:8px;
+}
+.formula .exp{
+  font-family:var(--display); font-style:italic; font-size:19px;
+  display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+}
+.frac{display:inline-flex; flex-direction:column; text-align:center; vertical-align:middle; font-size:.8em}
+.frac .num{border-bottom:1px solid currentColor; padding:0 5px 1px}
+.frac .den{padding:1px 5px 0}
+.formula .pie{font-size:13.5px; color:var(--muted); margin:0}
+code{font-family:var(--dato); font-size:.92em}
+</style>
+
+<div class="hoja">
+
+  <header>
+    <span class="eyebrow">Electromagnetismo I · Bloque 2</span>
+    <h1>Capacitor esférico</h1>
+    <p class="bajada">Dos esferas conductoras concéntricas con cargas iguales y opuestas.
+      Mueve los radios y observa cómo responde la capacitancia.</p>
+  </header>
+
+  <div class="panel">
+
+    <section class="caja">
+      <h2>Corte transversal</h2>
+      <svg id="corte" viewBox="0 0 320 340" role="img"
+           aria-label="Corte de dos esferas concéntricas con el campo eléctrico radial entre ellas">
+        <defs>
+          <marker id="punta" viewBox="0 0 10 10" refX="9" refY="5"
+                  markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+            <path d="M0,1 L10,5 L0,9 z" fill="var(--campo)"/>
+          </marker>
+        </defs>
+        <circle id="exterior" cx="160" cy="155" r="100"
+                fill="var(--velo)" stroke="var(--arco)" stroke-width="2.5"/>
+        <g id="campo"></g>
+        <circle id="interior" cx="160" cy="155" r="25"
+                fill="var(--cobre)" stroke="none"/>
+        <text id="et-r1" x="160" y="155" font-family="var(--dato)" font-size="12"
+              fill="var(--cobre)" text-anchor="middle">r₁</text>
+        <text id="et-r2" x="160" y="155" font-family="var(--dato)" font-size="12"
+              fill="var(--arco)" text-anchor="start">r₂</text>
+        <g id="regla">
+          <line x1="40" y1="312" x2="76" y2="312" stroke="var(--muted)" stroke-width="1.5"/>
+          <line x1="40" y1="308" x2="40" y2="316" stroke="var(--muted)" stroke-width="1.5"/>
+          <line x1="76" y1="308" x2="76" y2="316" stroke="var(--muted)" stroke-width="1.5"/>
+          <text x="82" y="316" font-family="var(--dato)" font-size="11" fill="var(--muted)">10 cm</text>
+        </g>
+      </svg>
+
+      <div class="mandos">
+        <div class="mando">
+          <div class="fila">
+            <label for="r1">Radio interior <span aria-hidden="true">r₁</span></label>
+            <span class="val" id="v-r1">5,0 cm</span>
+          </div>
+          <input type="range" id="r1" min="2" max="8" step="0.1" value="5">
+        </div>
+        <div class="mando">
+          <div class="fila">
+            <label for="r2">Radio exterior <span aria-hidden="true">r₂</span></label>
+            <span class="val" id="v-r2">8,0 cm</span>
+          </div>
+          <input type="range" id="r2" min="3" max="40" step="0.1" value="8">
+        </div>
+        <div class="presets">
+          <button type="button" data-r1="5" data-r2="5.4">Casi en contacto</button>
+          <button type="button" data-r1="5" data-r2="12">Separación media</button>
+          <button type="button" data-r1="5" data-r2="40">Muy separadas</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="caja">
+      <h2>Lecturas</h2>
+
+      <div class="lecturas">
+        <div class="lectura"><span class="k">Radio interior</span><span class="v" id="o-r1">5,0 cm</span></div>
+        <div class="lectura"><span class="k">Radio exterior</span><span class="v" id="o-r2">8,0 cm</span></div>
+        <div class="lectura"><span class="k">Separación</span><span class="v" id="o-d">3,0 cm</span></div>
+      </div>
+
+      <div class="capacitancia">
+        <span class="k">Capacitancia</span>
+        <span class="v" id="o-c">14,84</span>
+        <span class="u">pF</span>
+      </div>
+
+      <h2>Capacitancia frente al radio exterior</h2>
+      <svg id="curva" viewBox="0 0 320 190" role="img"
+           aria-label="Curva de la capacitancia en función del radio exterior, con la asíntota de la esfera aislada"></svg>
+
+      <p class="aviso" id="aviso"></p>
+    </section>
+
+  </div>
+
+  <section class="formula">
+    <div class="exp">
+      <span>C = 4πε<sub>0</sub></span>
+      <span class="frac"><span class="num">r₁ r₂</span><span class="den">r₂ − r₁</span></span>
+    </div>
+    <p class="pie">Con <code>ε₀ = 8,854 × 10⁻¹² C²/(N·m²)</code>. Al alejar la esfera exterior,
+      el cociente tiende a r₁ y la capacitancia se estanca en <code>4πε₀r₁</code>, el valor
+      de una esfera conductora aislada. La línea punteada marca ese límite.</p>
+  </section>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var K = 1.112650056;            // pF por cm, equivale a 4·pi·eps0
+  var CX = 160, CY = 155;         // centro del corte
+  var PX_CM = 2.6;                // escala del dibujo: px por cm
+
+  var elR1 = document.getElementById("r1");
+  var elR2 = document.getElementById("r2");
+
+  function C(r1, r2){ return K * r1 * r2 / (r2 - r1); }
+  function asintota(r1){ return K * r1; }
+  function num(x, d){ return x.toFixed(d).replace(".", ","); }
+
+  // ---------- corte transversal ----------
+  function dibujarCorte(r1, r2){
+    document.getElementById("interior").setAttribute("r", r1 * PX_CM);
+    document.getElementById("exterior").setAttribute("r", r2 * PX_CM);
+
+    var g = document.getElementById("campo");
+    while (g.firstChild) g.removeChild(g.firstChild);
+
+    var n = 12, i, a, ux, uy, ln;
+    for (i = 0; i < n; i++){
+      a = (i / n) * Math.PI * 2;
+      ux = Math.cos(a); uy = Math.sin(a);
+      ln = document.createElementNS("http://www.w3.org/2000/svg", "line");
+      ln.setAttribute("x1", CX + ux * r1 * PX_CM);
+      ln.setAttribute("y1", CY + uy * r1 * PX_CM);
+      ln.setAttribute("x2", CX + ux * r2 * PX_CM);
+      ln.setAttribute("y2", CY + uy * r2 * PX_CM);
+      ln.setAttribute("stroke", "var(--campo)");
+      ln.setAttribute("stroke-width", "1.4");
+      ln.setAttribute("marker-end", "url(#punta)");
+      g.appendChild(ln);
+    }
+
+    var t1 = document.getElementById("et-r1");
+    t1.setAttribute("x", CX);
+    t1.setAttribute("y", CY + 4);
+    t1.setAttribute("fill", r1 * PX_CM > 14 ? "var(--bg)" : "var(--cobre)");
+
+    var t2 = document.getElementById("et-r2");
+    t2.setAttribute("x", CX + r2 * PX_CM + 6);
+    t2.setAttribute("y", CY + 4);
+  }
+
+  // ---------- curva ----------
+  function dibujarCurva(r1, r2){
+    var W = 320, H = 190, L = 42, R = 14, T = 14, B = 32;
+    var x0 = r1 + 1, x1 = 42;
+    var yMax = Math.max(20, Math.ceil(C(r1, r1 + 1) / 10) * 10);
+    var svg = document.getElementById("curva");
+    var ns = "http://www.w3.org/2000/svg";
+    var out = "";
+
+    function px(x){ return L + (x - x0) / (x1 - x0) * (W - L - R); }
+    function py(y){ return H - B - Math.min(y, yMax) / yMax * (H - T - B); }
+
+    // rejilla y rótulos del eje y
+    var paso = yMax / 4, k, yv;
+    for (k = 0; k <= 4; k++){
+      yv = k * paso;
+      out += '<line x1="' + L + '" y1="' + py(yv) + '" x2="' + (W - R) + '" y2="' + py(yv) +
+             '" stroke="var(--line)" stroke-width="1"/>';
+      out += '<text x="' + (L - 7) + '" y="' + (py(yv) + 4) + '" text-anchor="end" font-size="10" ' +
+             'fill="var(--muted)">' + Math.round(yv) + '</text>';
+    }
+    // rótulos del eje x
+    [10, 20, 30, 40].forEach(function(xv){
+      if (xv < x0) return;
+      out += '<text x="' + px(xv) + '" y="' + (H - B + 15) + '" text-anchor="middle" font-size="10" ' +
+             'fill="var(--muted)">' + xv + '</text>';
+    });
+    out += '<text x="' + (W - R) + '" y="' + (H - 4) + '" text-anchor="end" font-size="10" ' +
+           'fill="var(--muted)">r₂ (cm)</text>';
+    out += '<text x="' + L + '" y="10" font-size="10" fill="var(--muted)">C (pF)</text>';
+
+    // asíntota
+    var ay = py(asintota(r1));
+    out += '<line x1="' + L + '" y1="' + ay + '" x2="' + (W - R) + '" y2="' + ay +
+           '" stroke="var(--cobre)" stroke-width="1.5" stroke-dasharray="5 4"/>';
+    out += '<text x="' + (W - R) + '" y="' + (ay - 6) + '" text-anchor="end" font-size="10" ' +
+           'fill="var(--cobre)">4πε₀r₁ = ' + num(asintota(r1), 2) + ' pF</text>';
+
+    // curva
+    var d = "", x, y, primero = true, paso_x = (x1 - x0) / 220;
+    for (x = x0; x <= x1 + 1e-9; x += paso_x){
+      y = C(r1, x);
+      if (y > yMax) { primero = true; continue; }
+      d += (primero ? "M" : "L") + px(x).toFixed(1) + " " + py(y).toFixed(1) + " ";
+      primero = false;
+    }
+    out += '<path d="' + d + '" fill="none" stroke="var(--morado)" stroke-width="2.2"/>';
+
+    // punto actual
+    var cy = C(r1, r2);
+    if (cy <= yMax){
+      out += '<line x1="' + px(r2) + '" y1="' + py(cy) + '" x2="' + px(r2) + '" y2="' + (H - B) +
+             '" stroke="var(--morado)" stroke-width="1" stroke-dasharray="3 3" opacity=".55"/>';
+      out += '<circle cx="' + px(r2) + '" cy="' + py(cy) + '" r="4.5" fill="var(--morado)"/>';
+    }
+
+    // ejes
+    out += '<line x1="' + L + '" y1="' + T + '" x2="' + L + '" y2="' + (H - B) +
+           '" stroke="var(--muted)" stroke-width="1"/>';
+    out += '<line x1="' + L + '" y1="' + (H - B) + '" x2="' + (W - R) + '" y2="' + (H - B) +
+           '" stroke="var(--muted)" stroke-width="1"/>';
+
+    svg.innerHTML = out;
+    svg.setAttribute("xmlns", ns);
+  }
+
+  // ---------- aviso contextual ----------
+  function texto(r1, r2){
+    var c = C(r1, r2), a = asintota(r1);
+    if (r2 - r1 < 1.0)
+      return "Las esferas casi se tocan. La capacitancia crece sin límite cuando r₂ → r₁: " +
+             "lo mismo que dice C = ε₀A/d para las placas paralelas cuando d → 0.";
+    if (c < a * 1.25)
+      return "La esfera exterior está tan lejos que ya casi no influye. C = " + num(c, 2) +
+             " pF, apenas por encima de " + num(a, 2) + " pF, que es el valor de la esfera interior sola.";
+    if (r2 > r1 * 3)
+      return "Al seguir alejando la esfera exterior, C baja cada vez más despacio. No tiende a cero: " +
+             "se acerca a " + num(a, 2) + " pF.";
+    return "La capacitancia depende de la geometría, no de la carga: cargar más el capacitor " +
+           "sube la diferencia de potencial en la misma proporción.";
+  }
+
+  // ---------- actualización ----------
+  function actualizar(){
+    var r1 = parseFloat(elR1.value);
+    elR2.min = (r1 + 0.4).toFixed(1);
+    var r2 = parseFloat(elR2.value);
+    if (r2 < r1 + 0.4){ r2 = r1 + 0.4; elR2.value = r2.toFixed(1); }
+
+    document.getElementById("v-r1").textContent = num(r1, 1) + " cm";
+    document.getElementById("v-r2").textContent = num(r2, 1) + " cm";
+    document.getElementById("o-r1").textContent = num(r1, 1) + " cm";
+    document.getElementById("o-r2").textContent = num(r2, 1) + " cm";
+    document.getElementById("o-d").textContent  = num(r2 - r1, 1) + " cm";
+    document.getElementById("o-c").textContent  = num(C(r1, r2), 2);
+    document.getElementById("aviso").textContent = texto(r1, r2);
+
+    dibujarCorte(r1, r2);
+    dibujarCurva(r1, r2);
+  }
+
+  elR1.addEventListener("input", actualizar);
+  elR2.addEventListener("input", actualizar);
+
+  Array.prototype.forEach.call(document.querySelectorAll(".presets button"), function(b){
+    b.addEventListener("click", function(){
+      elR1.value = b.dataset.r1;
+      elR2.min = (parseFloat(b.dataset.r1) + 0.4).toFixed(1);
+      elR2.value = b.dataset.r2;
+      actualizar();
+    });
+  });
+
+  actualizar();
+})();
+</script>
+
+</body></html>
